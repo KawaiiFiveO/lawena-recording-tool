@@ -282,7 +282,7 @@ public class Lawena {
         log.fine("Movie path: " + settings.getMoviePath());
         log.fine("Lawena path: " + Paths.get("").toAbsolutePath());
 
-        view.setTitle("Lawena Recording Tool " + shortver() + " - SniperPOV Version");
+        view.setTitle("Lawena Recording Tool " + shortver() + " - SniperPOV x64 Version");
         URL url = Lawena.class.getClassLoader().getResource("ui/tf2.png");
         if (url != null) {
             view.setIconImage(new ImageIcon(url).getImage());
@@ -406,6 +406,7 @@ public class Lawena {
         view.getMntmChangeTfDirectory().addActionListener(new Tf2FolderChange());
         view.getMntmChangeMovieDirectory().addActionListener(new MovieFolderChange());
         view.getSelectHlaeLocation().addActionListener(new HlaePathChange());
+        view.getSelectExtraHookDll().addActionListener(new ExtraHookDllChange());
         view.getMntmRevertToDefault().addActionListener(e -> {
             Path movies = settings.getMoviePath();
             settings.loadDefaults();
@@ -765,6 +766,8 @@ public class Lawena {
         view.getSourceLaunch().setSelected(settings.getString(Key.LaunchMode).equals("hl2"));
         view.getSteamLaunch().setSelected(settings.getString(Key.LaunchMode).equals("steam"));
         view.getHlaeLaunch().setSelected(settings.getString(Key.LaunchMode).equals("hlae"));
+        view.getTf2x64().setSelected(settings.getBoolean(Key.Tf2x64));
+        cl.setX64(settings.getBoolean(Key.Tf2x64));
         view.getCopyUserConfig().setSelected(settings.getBoolean(Key.CopyUserConfig));
         view.getUsePlayerModel().setSelected(settings.getHudPlayerModel());
         view.getCmbSourceVideoFormat().setSelectedItem(
@@ -824,6 +827,8 @@ public class Lawena {
         } else if (view.getHlaeLaunch().isSelected()) {
             settings.setString(Key.LaunchMode, "hlae");
         }
+        settings.setBoolean(Key.Tf2x64, view.getTf2x64().isSelected());
+        cl.setX64(view.getTf2x64().isSelected());
         settings.setHudPlayerModel(view.getUsePlayerModel().isSelected());
         Object selectedSourceVideoFormat = view.getCmbSourceVideoFormat().getSelectedItem();
         if (selectedSourceVideoFormat != null) {
@@ -1442,6 +1447,52 @@ public class Lawena {
                 }
             } else {
                 JOptionPane.showMessageDialog(view, "Please wait until TF2 has stopped running");
+            }
+        }
+
+    }
+
+    public class ExtraHookDllChange implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (startTfTask != null) {
+                JOptionPane.showMessageDialog(view, "Please wait until TF2 has stopped running");
+                return;
+            }
+            String current = settings.getString(Key.ExtraHookDll);
+            String hlaePath = settings.getString(Key.HlaePath);
+            chooser = new JFileChooser(current.isEmpty()
+                ? (hlaePath.isEmpty() ? null : Paths.get(hlaePath).getParent().toFile())
+                : Paths.get(current).getParent().toFile());
+            chooser.setDialogTitle("Choose an extra DLL for HLAE to inject (e.g. SniperPOVx64.dll)");
+            chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            chooser.setFileHidingEnabled(false);
+            chooser.setFileFilter(new FileFilter() {
+
+                @Override
+                public String getDescription() {
+                    return "DLL files (must match 32/64-bit TF2)";
+                }
+
+                @Override
+                public boolean accept(File f) {
+                    return f.isDirectory() || f.getName().toLowerCase().endsWith(".dll");
+                }
+            });
+            if (chooser.showOpenDialog(view) == JFileChooser.APPROVE_OPTION) {
+                Path selected = chooser.getSelectedFile().toPath().toAbsolutePath();
+                log.finer("Selected extra hook DLL: " + selected);
+                settings.setString(Key.ExtraHookDll, selected.toString());
+                JOptionPane.showMessageDialog(view, String.format("Extra hook DLL: %s", selected),
+                    "Extra HLAE Hook DLL", JOptionPane.INFORMATION_MESSAGE);
+            } else if (!current.isEmpty()) {
+                int ret = JOptionPane.showConfirmDialog(view,
+                    String.format("Stop loading the extra hook DLL?%n%s", current),
+                    "Extra HLAE Hook DLL", JOptionPane.YES_NO_OPTION);
+                if (ret == JOptionPane.YES_OPTION) {
+                    settings.setString(Key.ExtraHookDll, "");
+                }
             }
         }
 

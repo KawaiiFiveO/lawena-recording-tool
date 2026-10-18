@@ -10,11 +10,13 @@ import java.util.logging.Level;
 
 public class CLWindows extends CommandLine {
 
-    private String hl2 = "hl2.exe";
+    private String gameExe() {
+        return x64 ? "tf_win64.exe" : "hl2.exe";
+    }
 
     @Override
     public ProcessBuilder getBuilderStartTF2(String gamePath) {
-        Path path = Paths.get(gamePath, "..", "hl2.exe");
+        Path path = Paths.get(gamePath, "..", gameExe());
         try {
             path = path.toRealPath();
         } catch (IOException e) {
@@ -30,28 +32,40 @@ public class CLWindows extends CommandLine {
     }
 
     @Override
-    public ProcessBuilder getBuilderStartHLAE(String hlaePath, String gamePath) {
-        Path hl2Path = Paths.get(gamePath).resolve(".." + File.separator + "hl2.exe");
+    public ProcessBuilder getBuilderStartHLAE(String hlaePath, String gamePath, String extraHookDll) {
+        Path hl2Path = Paths.get(gamePath).resolve(".." + File.separator + gameExe());
         try {
             hl2Path = hl2Path.toRealPath();
         } catch (IOException e) {
             log.warning("Could not obtain real path of game executable: " + e.toString());
         }
-        Path hookPath = Paths.get(hlaePath).resolveSibling("AfxHookSource.dll");
-        Path hookPath_sniperPov = Paths.get(hlaePath).resolveSibling("SniperPOV.dll");
+        Path hookPath = Paths.get(hlaePath).resolveSibling(x64 ? "x64" + File.separator + "AfxHookSource.dll"
+            : "AfxHookSource.dll");
         try {
             hookPath = hookPath.toRealPath();
         } catch (IOException e) {
             log.warning("Could not obtain real path of HLAE Source hook DLL: " + e.toString());
         }
-        return new ProcessBuilder(hlaePath, "-customLoader", "-autoStart",
-            "-hookDllPath", hookPath.toString(), "-hookDllPath", hookPath_sniperPov.toString(),
-            "-programPath", hl2Path.toString(), "-cmdLine");
+        ProcessBuilder pb = new ProcessBuilder(hlaePath, "-customLoader", "-autoStart",
+            "-hookDllPath", hookPath.toString());
+        if (!extraHookDll.isEmpty()) {
+            Path extraPath = Paths.get(extraHookDll);
+            if (Files.isRegularFile(extraPath)) {
+                pb.command().add("-hookDllPath");
+                pb.command().add(extraPath.toAbsolutePath().toString());
+            } else {
+                log.warning("Extra hook DLL not found, launching without it: " + extraPath);
+            }
+        }
+        pb.command().add("-programPath");
+        pb.command().add(hl2Path.toString());
+        pb.command().add("-cmdLine");
+        return pb;
     }
 
     @Override
     public ProcessBuilder getBuilderTF2ProcessKiller() {
-        return new ProcessBuilder("taskkill", "/F", "/IM", hl2);
+        return new ProcessBuilder("taskkill", "/F", "/IM", gameExe());
     }
 
     @Override
@@ -98,6 +112,7 @@ public class CLWindows extends CommandLine {
 
     @Override
     public boolean isRunningTF2() {
+        String hl2 = gameExe();
         String line;
         ProcessBuilder[] builders =
             {

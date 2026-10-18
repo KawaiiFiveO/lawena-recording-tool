@@ -46,6 +46,15 @@ public abstract class CommandLine {
     }
 
     /**
+     * Whether to launch, detect and kill the 64-bit TF2 executable instead of the 32-bit one. Only used on Windows.
+     */
+    protected boolean x64 = false;
+
+    public void setX64(boolean x64) {
+        this.x64 = x64;
+    }
+
+    /**
      * Returns the necessary {@link ProcessBuilder} to launch TF2. It will be used when {@link
      * #startTf(SettingsManager)} is called.
      *
@@ -57,7 +66,13 @@ public abstract class CommandLine {
 
     protected abstract ProcessBuilder getBuilderStartSteam(String steamPath);
 
-    protected abstract ProcessBuilder getBuilderStartHLAE(String hlaePath, String gamePath);
+    /**
+     * Returns the {@link ProcessBuilder} to launch TF2 through HLAE's custom loader.
+     *
+     * @param extraHookDll path of an additional DLL to inject after the HLAE hook, or an empty
+     *                     <code>String</code> for none. It must match the bitness of the game executable.
+     */
+    protected abstract ProcessBuilder getBuilderStartHLAE(String hlaePath, String gamePath, String extraHookDll);
 
     /**
      * Returns the necessary {@link ProcessBuilder} to stop or kill the TF2 process, to abort its execution. It will be
@@ -285,6 +300,7 @@ public abstract class CommandLine {
      */
     public void startTf(SettingsManager cfg) {
         try {
+            x64 = cfg.getBoolean(Key.Tf2x64);
             String mode = cfg.getString(Key.LaunchMode);
             String opts = cfg.getString(Key.LaunchOptions);
             Map<String, String> options = new LinkedHashMap<>();
@@ -320,6 +336,9 @@ public abstract class CommandLine {
                     log.warning("Discarding invalid launch parameter: " + key);
                 }
             }
+            if (x64 && options.remove("-force32bit") != null) {
+                log.warning("Ignoring -force32bit launch parameter since 64-bit TF2 is enabled");
+            }
             // Remove -dxlevel if the user provided +mat_dxlevel
             // This won't have the desired effect if launch is done through Steam executable
             if (options.containsKey("+mat_dxlevel")) {
@@ -350,7 +369,8 @@ public abstract class CommandLine {
                     pb.command().add(options.get("-applaunch"));
                     break;
                 case "hlae":
-                    pb = getBuilderStartHLAE(cfg.getString(Key.HlaePath), cfg.getString(Key.TfDir));
+                    pb = getBuilderStartHLAE(cfg.getString(Key.HlaePath), cfg.getString(Key.TfDir),
+                        cfg.getString(Key.ExtraHookDll));
                     break;
                 default:
                     pb = getBuilderStartTF2(cfg.getString(Key.TfDir));

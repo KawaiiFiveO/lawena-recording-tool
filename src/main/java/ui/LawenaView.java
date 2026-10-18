@@ -79,6 +79,8 @@ public class LawenaView extends JFrame {
     private JRadioButtonMenuItem steamLaunch;
     private JRadioButtonMenuItem hlaeLaunch;
     private JMenuItem selectHlaeLocation;
+    private JCheckBoxMenuItem tf2x64;
+    private JMenuItem selectExtraHookDll;
     private JCheckBoxMenuItem copyUserConfig;
 
     /**
@@ -151,14 +153,18 @@ public class LawenaView extends JFrame {
         JRadioButtonMenuItem mnSteamLaunch = new JRadioButtonMenuItem("Launch using Steam");
         JRadioButtonMenuItem mnHlaeLaunch =
             new JRadioButtonMenuItem("Launch using HLAE with -insecure");
+        JCheckBoxMenuItem mnTf2x64 = new JCheckBoxMenuItem("Use 64-bit TF2 (tf_win64.exe)");
         JSeparator separatorLaunchMode = new JSeparator();
         JMenuItem mnHlaePath = new JMenuItem("Select HLAE executable...");
+        JMenuItem mnExtraHookDll = new JMenuItem("Select extra HLAE hook DLL...");
 
         mnLaunchMode.add(mnSourceLaunch);
         mnLaunchMode.add(mnSteamLaunch);
         mnLaunchMode.add(mnHlaeLaunch);
+        mnLaunchMode.add(mnTf2x64);
         mnLaunchMode.add(separatorLaunchMode);
         mnLaunchMode.add(mnHlaePath);
+        mnLaunchMode.add(mnExtraHookDll);
 
         ButtonGroup group = new ButtonGroup();
         group.add(mnSourceLaunch);
@@ -661,6 +667,8 @@ public class LawenaView extends JFrame {
         this.steamLaunch = mnSteamLaunch;
         this.hlaeLaunch = mnHlaeLaunch;
         this.selectHlaeLocation = mnHlaePath;
+        this.tf2x64 = mnTf2x64;
+        this.selectExtraHookDll = mnExtraHookDll;
         this.launchModeGroup = group;
 
         JCheckBox usePlayerModel_1 = new JCheckBox("3D Player Model in HUD");
@@ -888,6 +896,14 @@ public class LawenaView extends JFrame {
 
     public JMenuItem getSelectHlaeLocation() {
         return selectHlaeLocation;
+    }
+
+    public JCheckBoxMenuItem getTf2x64() {
+        return tf2x64;
+    }
+
+    public JMenuItem getSelectExtraHookDll() {
+        return selectExtraHookDll;
     }
 
     private static class LaunchURLWorker extends SwingWorker<Void, Void> {

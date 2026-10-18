@@ -28,7 +28,7 @@ public class CLLinux extends CommandLine {
     }
 
     @Override
-    public ProcessBuilder getBuilderStartHLAE(String hlaePath, String gamePath) {
+    public ProcessBuilder getBuilderStartHLAE(String hlaePath, String gamePath, String extraHookDll) {
         throw new UnsupportedOperationException("HLAE is not supported here");
     }
 
